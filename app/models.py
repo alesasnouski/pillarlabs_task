@@ -1,13 +1,7 @@
-from __future__ import annotations
-
 from datetime import UTC, datetime
 
 import sqlalchemy as sa
 from sqlmodel import Field, SQLModel
-
-
-def utcnow() -> datetime:
-    return datetime.now(UTC)
 
 
 class User(SQLModel, table=True):
@@ -19,11 +13,11 @@ class User(SQLModel, table=True):
     hashed_password: str
     is_active: bool = Field(default=True)
     created_at: datetime = Field(
-        default_factory=utcnow,
+        default_factory=lambda: datetime.now(UTC),
         sa_column=sa.Column(sa.DateTime(timezone=True), nullable=False),
     )
     updated_at: datetime = Field(
-        default_factory=utcnow,
+        default_factory=lambda: datetime.now(UTC),
         sa_column=sa.Column(sa.DateTime(timezone=True), nullable=False),
     )
 
@@ -38,10 +32,10 @@ class Annotation(SQLModel, table=True):
     plan: str = Field(default="")
     status: str = Field(default="created")
     created_at: datetime = Field(
-        default_factory=utcnow,
+        default_factory=lambda: datetime.now(UTC),
         sa_column=sa.Column(sa.DateTime(timezone=True), nullable=False),
     )
     updated_at: datetime = Field(
-        default_factory=utcnow,
+        default_factory=lambda: datetime.now(UTC),
         sa_column=sa.Column(sa.DateTime(timezone=True), nullable=False),
     )

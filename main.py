@@ -5,9 +5,10 @@ from contextlib import asynccontextmanager
 from alembic import command
 from alembic.config import Config
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
 
-from app.routers import annotations, users
+from app.routers import annotations, auth, users
 
 logging.basicConfig(
     level=logging.INFO,
@@ -28,6 +29,7 @@ async def lifespan(_app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 
 @app.exception_handler(Exception)
@@ -36,5 +38,11 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
     return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
 
+@app.get("/")
+async def root():
+    return RedirectResponse(url="/auth/login")
+
+
+app.include_router(auth.router)
 app.include_router(annotations.router)
 app.include_router(users.router)
