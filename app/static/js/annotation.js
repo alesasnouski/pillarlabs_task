@@ -11,9 +11,8 @@ document.addEventListener('alpine:init', () => {
 
         onUrlChange() {
             clearTimeout(this.debounceTimer);
-            this.screenshotUrl = null;
             this.screenshotError = null;
-            this.debounceTimer = setTimeout(() => this.fetchScreenshot(), 1000);
+            this.debounceTimer = setTimeout(() => this.fetchScreenshot(), 2000);
         },
 
         isValidUrl(url) {
