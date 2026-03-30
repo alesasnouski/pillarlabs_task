@@ -5,6 +5,7 @@ build/
 dist/
 wheels/
 *.egg-info
+media/screenshots/*.png
 .env
 .coverage
 # Virtual environments

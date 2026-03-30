@@ -116,7 +116,7 @@ class BrowserManager:
             await page.wait_for_load_state("networkidle", timeout=5_000)
         except PlaywrightTimeoutError:
             pass
-        await asyncio.sleep(0.3)  # brief pause for JS re-renders after action
+        await asyncio.sleep(0.5)  # brief pause for JS re-renders after action
 
     async def take_page_screenshot(self, page: Page) -> str:
         """Capture and save a full-viewport screenshot for an active session page."""

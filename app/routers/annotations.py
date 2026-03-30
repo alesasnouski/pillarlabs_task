@@ -171,12 +171,9 @@ async def annotation_create(
     csrf_protect: CsrfProtect = Depends(),
 ):
     await csrf_protect.validate_csrf(request)
-    assert current_user.id is not None
-
     annotation = Annotation(user_id=current_user.id, url=url, prompt=prompt, plan=plan)
     session.add(annotation)
     await session.flush()
-    assert annotation.id is not None
     annotation_id = annotation.id
 
     if screenshot_path:
@@ -213,8 +210,8 @@ async def annotation_session(
     )
     latest_screenshot = result.first()
 
-    # First session load (no actions yet) — take a fresh screenshot from the live page
-    if not actions:
+    # First session load (no actions yet and no initial screenshot) — take a fresh screenshot
+    if not latest_screenshot:
         image_path = await browser_manager.take_page_screenshot(page)
         new_screenshot = Screenshot(annotation_id=annotation_id, image_path=image_path)
         session.add(new_screenshot)
@@ -236,6 +233,34 @@ async def annotation_session(
     return response
 
 
+async def _handle_stop_action(
+    annotation_id: int,
+    action_data: ActionCreate,
+    annotation: Annotation,
+    browser_manager: BrowserManager,
+    session: AsyncSession,
+) -> JSONResponse:
+    annotation.status = "completed"
+    session.add(annotation)
+    await browser_manager.close_page(annotation_id)
+
+    result = await session.exec(
+        select(Screenshot).where(Screenshot.annotation_id == annotation_id).order_by(Screenshot.id.desc())
+    )
+    latest_screenshot = result.first()
+
+    action = Action(
+        annotation_id=annotation_id,
+        screenshot_id=latest_screenshot.id if latest_screenshot else None,
+        type=action_data.action_type,
+        description=action_data.description,
+        final_result=action_data.final_result,
+    )
+    session.add(action)
+    await session.commit()
+    return JSONResponse({"screenshot_url": f"/media/{latest_screenshot.image_path}" if latest_screenshot else ""})
+
+
 @router.post("/{annotation_id}/action")
 async def annotation_action(
     annotation_id: int,
@@ -255,6 +280,9 @@ async def annotation_action(
     try:
         page = await browser_manager.get_or_create_page(annotation_id, annotation.url)
 
+        if action_data.action_type == "stop":
+            return await _handle_stop_action(annotation_id, action_data, annotation, browser_manager, session)
+
         if action_data.action_type == "click":
             # Boundaries are verified by Pydantic model
             await browser_manager.perform_click(page, action_data.click_axis_x, action_data.click_axis_y)  # type: ignore
@@ -269,9 +297,6 @@ async def annotation_action(
         session.add(screenshot)
         await session.flush()
 
-        assert annotation.id is not None
-        assert screenshot.id is not None
-
         action = Action(
             annotation_id=annotation_id,
             screenshot_id=screenshot.id,
@@ -283,12 +308,6 @@ async def annotation_action(
             final_result=action_data.final_result,
         )
         session.add(action)
-
-        if action_data.action_type == "stop":
-            annotation.status = "completed"
-            session.add(annotation)
-            await browser_manager.close_page(annotation_id)
-
         await session.commit()
         return JSONResponse({"screenshot_url": f"/media/{image_path}"})
 
