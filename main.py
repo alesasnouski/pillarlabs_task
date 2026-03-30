@@ -2,11 +2,6 @@ import asyncio
 import logging
 from contextlib import asynccontextmanager
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-)
-
 from alembic import command
 from alembic.config import Config
 from fastapi import FastAPI, Request
@@ -14,6 +9,10 @@ from fastapi.responses import JSONResponse
 
 from app.routers import annotations, users
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+)
 logger = logging.getLogger(__name__)
 
 

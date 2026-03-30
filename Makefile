@@ -14,3 +14,9 @@ migrate:
 
 test:
 	uv run pytest tests/ -v
+
+lformat:
+	uv run ruff format .
+
+lfix:
+	uv run ruff check --fix .

@@ -28,11 +28,14 @@ async def test_get_user_not_found(client: AsyncClient):
 
 
 async def test_create_user(client: AsyncClient):
-    response = await client.post("/users/", json={
-        "username": "newuser",
-        "email": "new@example.com",
-        "password": "secret",
-    })
+    response = await client.post(
+        "/users/",
+        json={
+            "username": "newuser",
+            "email": "new@example.com",
+            "password": "secret",
+        },
+    )
     assert response.status_code == 201
     data = response.json()
     assert data["id"] is not None
