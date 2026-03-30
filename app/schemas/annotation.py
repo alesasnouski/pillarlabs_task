@@ -25,7 +25,7 @@ class ActionCreate(BaseModel):
         click_axis_y: int | None = Form(None),
         input_text: str | None = Form(None),
         final_result: str = Form(""),
-    ) -> "ActionCreate":
+    ) -> ActionCreate:
         return cls(
             action_type=action_type,
             description=description,
@@ -36,7 +36,7 @@ class ActionCreate(BaseModel):
         )
 
     @model_validator(mode="after")
-    def validate_action(self) -> "ActionCreate":
+    def validate_action(self) -> ActionCreate:
         from app.services.browser import VIEWPORT
 
         if self.action_type == "click":

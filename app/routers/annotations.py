@@ -6,7 +6,7 @@ import zipfile
 from http import HTTPStatus
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPExceptionDepends, Form, Request
+from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from fastapi_csrf_protect import CsrfProtect
@@ -18,9 +18,8 @@ from app.ai.plan import PlanGenerationError, generate_plan
 from app.core.database import get_session
 from app.core.deps import get_current_user
 from app.models import Action, Annotation, Screenshot, User
-from app.schemas.annotation import ActionCreate, GeneratePlanRequest
+from app.schemas.annotation import ActionCreate
 from app.services.browser import (
-    VIEWPORT,
     BrowserManager,
     ScreenshotError,
     get_browser_manager,
