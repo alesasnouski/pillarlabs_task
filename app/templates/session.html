@@ -53,6 +53,8 @@
             <div class="action-type-grid">
                 <button type="button" class="action-btn" :class="{ active: actionType === 'click' }"
                         @click="actionType = 'click'">Click</button>
+                <button type="button" class="action-btn" :class="{ active: actionType === 'type' }"
+                        @click="actionType = 'type'">Type</button>
                 <button type="button" class="action-btn" :class="{ active: actionType === 'scroll_up' }"
                         @click="actionType = 'scroll_up'">Scroll Up</button>
                 <button type="button" class="action-btn" :class="{ active: actionType === 'scroll_down' }"
@@ -66,6 +68,11 @@
             <label>Click coordinates</label>
             <p class="muted" x-show="clickX === null">Click on the screenshot to set coordinates</p>
             <p x-show="clickX !== null">X: <strong x-text="clickX"></strong> &nbsp; Y: <strong x-text="clickY"></strong></p>
+        </div>
+
+        <div class="field" x-show="actionType === 'type'">
+            <label>Text to type</label>
+            <input type="text" x-model="inputText" placeholder="e.g. Warsaw...">
         </div>
 
         <div class="field">
@@ -95,6 +102,9 @@
                 {% for a in actions %}
                 <div class="action-history-item">
                     <span class="badge">{{ a.type }}</span>
+                    {% if a.type == 'type' %}
+                    <span class="muted" style="margin-right: 0.5rem">("{{ a.input_text }}")</span>
+                    {% endif %}
                     <span class="action-history-desc">{{ a.description }}</span>
                 </div>
                 {% endfor %}

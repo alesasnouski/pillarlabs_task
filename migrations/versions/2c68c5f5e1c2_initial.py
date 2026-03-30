@@ -69,6 +69,7 @@ def upgrade() -> None:
         sa.Column("click_axis_y", sa.Integer(), nullable=True),
         sa.Column("description", sa.String(), nullable=False),
         sa.Column("final_result", sa.String(), nullable=False),
+        sa.Column('input_text', sa.String(), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.ForeignKeyConstraint(["annotation_id"], ["annotations.id"]),
         sa.ForeignKeyConstraint(["screenshot_id"], ["screenshots.id"]),

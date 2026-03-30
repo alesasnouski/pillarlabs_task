@@ -132,6 +132,12 @@ class BrowserManager:
         await page.mouse.click(x, y)
         await self._wait_for_page(page)
 
+    async def perform_type(self, page: Page, text: str) -> None:
+        """Type the given text using the keyboard on the currently focused element."""
+        # We assume the user has already clicked on the input field before typing
+        await page.keyboard.type(text)
+        await self._wait_for_page(page)
+
     async def perform_scroll(self, page: Page, direction: str) -> None:
         """Simulate a mouse wheel scroll event up or down and wait for the page to settle."""
         if direction == "scroll_up":

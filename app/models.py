@@ -74,9 +74,10 @@ class Action(SQLModel, table=True):
     annotation_id: int = Field(foreign_key="annotations.id", index=True)
     screenshot_id: int | None = Field(default=None, foreign_key="screenshots.id")
 
-    type: str  # click / scroll_up / scroll_down / stop
+    type: str  # click / scroll_up / scroll_down / type / stop
     click_axis_x: int | None = Field(default=None)
     click_axis_y: int | None = Field(default=None)
+    input_text: str | None = Field(default=None)
     description: str
     final_result: str = Field(default="")
 

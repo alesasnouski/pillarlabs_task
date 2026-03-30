@@ -19,6 +19,7 @@ from app.core.database import get_session
 from app.core.deps import get_current_user
 from app.models import Action, Annotation, Screenshot, User
 from app.services.browser import (
+    VIEWPORT,
     BrowserManager,
     ScreenshotError,
     get_browser_manager,
@@ -240,6 +241,7 @@ async def annotation_action(
     description: str = Form(),
     click_axis_x: int | None = Form(default=None),
     click_axis_y: int | None = Form(default=None),
+    input_text: str | None = Form(default=None),
     final_result: str = Form(default=""),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
@@ -255,8 +257,18 @@ async def annotation_action(
     try:
         page = await browser_manager.get_or_create_page(annotation_id, annotation.url)
 
-        if action_type == "click" and click_axis_x is not None and click_axis_y is not None:
+        if action_type == "click":
+            if click_axis_x is None or click_axis_y is None:
+                return JSONResponse({"error": "Missing click coordinates"}, status_code=HTTPStatus.BAD_REQUEST)
+            if not (0 <= click_axis_x <= VIEWPORT["width"]):
+                return JSONResponse({"error": f"X coordinate {click_axis_x} is out of bounds (0 - {VIEWPORT['width']})"}, status_code=HTTPStatus.BAD_REQUEST)
+            if not (0 <= click_axis_y <= VIEWPORT["height"]):
+                return JSONResponse({"error": f"Y coordinate {click_axis_y} is out of bounds (0 - {VIEWPORT['height']})"}, status_code=HTTPStatus.BAD_REQUEST)
             await browser_manager.perform_click(page, click_axis_x, click_axis_y)
+        elif action_type == "type":
+            if not input_text:
+                return JSONResponse({"error": "Missing input text"}, status_code=HTTPStatus.BAD_REQUEST)
+            await browser_manager.perform_type(page, input_text)
         elif action_type in ("scroll_up", "scroll_down"):
             await browser_manager.perform_scroll(page, action_type)
 
@@ -275,6 +287,7 @@ async def annotation_action(
             type=action_type,
             click_axis_x=click_axis_x,
             click_axis_y=click_axis_y,
+            input_text=input_text,
             description=description,
             final_result=final_result,
         )
@@ -311,6 +324,7 @@ def _serialize_annotation(
                 "type": a.type,
                 "click_x": a.click_axis_x,
                 "click_y": a.click_axis_y,
+                "input_text": a.input_text,
                 "description": a.description,
                 "final_result": a.final_result or None,
                 "screenshot": a.screenshot_id,

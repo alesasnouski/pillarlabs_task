@@ -3,6 +3,7 @@ document.addEventListener('alpine:init', () => {
         actionType: 'click',
         clickX: null,
         clickY: null,
+        inputText: '',
         markerLeft: 0,
         markerTop: 0,
         description: '',
@@ -14,6 +15,7 @@ document.addEventListener('alpine:init', () => {
         get canSubmit() {
             if (!this.description.trim()) return false;
             if (this.actionType === 'click' && this.clickX === null) return false;
+            if (this.actionType === 'type' && !this.inputText.trim()) return false;
             return true;
         },
 
@@ -48,6 +50,10 @@ document.addEventListener('alpine:init', () => {
                     body.append('click_axis_y', this.clickY);
                 }
 
+                if (this.actionType === 'type') {
+                    body.append('input_text', this.inputText);
+                }
+
                 const response = await fetch(`/annotations/${annotationId}/action`, {
                     method: 'POST',
                     body,
@@ -63,6 +69,7 @@ document.addEventListener('alpine:init', () => {
                 this.currentScreenshotUrl = data.screenshot_url;
                 this.clickX = null;
                 this.clickY = null;
+                this.inputText = '';
                 this.description = '';
                 this.finalResult = '';
 
