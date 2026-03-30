@@ -6,7 +6,7 @@
     <a href="/annotations/"><button class="btn btn-secondary">Back</button></a>
 </nav>
 
-<form method="post" action="/annotations/" x-data="annotationForm">
+<form method="post" action="/annotations/" x-data="annotationForm" @submit="submitting = true">
     <input type="hidden" name="csrf_token" x-ref="csrfToken" value="{{ csrf_token }}">
     <input type="hidden" name="screenshot_path" :value="screenshotUrl ? screenshotUrl.replace('/media/', '') : ''">
 
@@ -42,7 +42,10 @@
         <textarea name="plan" rows="20" x-model="plan" placeholder="Step-by-step plan (optional)"></textarea>
     </div>
 
-    <button type="submit" class="btn" :disabled="!canSubmit">Start</button>
+    <button type="submit" class="btn" :disabled="!canSubmit || submitting">
+        <span x-show="!submitting">Start</span>
+        <span x-show="submitting"><i data-lucide="loader-2" style="animation: spin 0.8s linear infinite"></i> Starting...</span>
+    </button>
     <p x-show="!canSubmit && $refs.url && $refs.url.value" class="muted" style="margin-top: 0.5rem">
         Screenshot required before creating annotation.
     </p>

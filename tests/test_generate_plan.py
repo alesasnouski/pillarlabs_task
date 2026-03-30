@@ -93,7 +93,7 @@ async def test_generate_plan_error(client: AsyncClient, mocker):
 
 
 async def test_screenshot_success(client: AsyncClient, mocker):
-    mocker.patch("app.routers.annotations.take_screenshot", return_value="screenshots/test.png")
+    mocker.patch("app.services.browser.BrowserManager.take_screenshot", return_value="screenshots/test.png")
     mocker.patch("app.routers.annotations.validate_url", return_value=None)
 
     response = await client.post(

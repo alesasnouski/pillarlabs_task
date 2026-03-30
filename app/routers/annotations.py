@@ -18,13 +18,10 @@ from app.ai.plan import PlanGenerationError, generate_plan
 from app.core.database import get_session
 from app.core.deps import get_current_user
 from app.models import Action, Annotation, Screenshot, User
-from app.services.browser import ScreenshotError, take_screenshot
-from app.services.browser_session import (
-    close_page,
-    get_or_create_page,
-    perform_click,
-    perform_scroll,
-    take_page_screenshot,
+from app.services.browser import (
+    BrowserManager,
+    ScreenshotError,
+    get_browser_manager,
 )
 from app.services.url_validator import validate_url
 
@@ -126,6 +123,7 @@ async def annotation_screenshot(
     url: str = Form(),
     current_user: User = Depends(get_current_user),
     csrf_protect: CsrfProtect = Depends(),
+    browser_manager: BrowserManager = Depends(get_browser_manager),
 ):
     await csrf_protect.validate_csrf(request)
 
@@ -134,7 +132,7 @@ async def annotation_screenshot(
         return JSONResponse({"error": error}, status_code=HTTPStatus.UNPROCESSABLE_ENTITY)
 
     try:
-        image_path = await take_screenshot(url)
+        image_path = await browser_manager.take_screenshot(url)
         return JSONResponse({"screenshot_url": f"/media/{image_path}"})
     except ScreenshotError as e:
         return JSONResponse({"error": str(e)}, status_code=HTTPStatus.BAD_GATEWAY)
@@ -195,12 +193,13 @@ async def annotation_session(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
     csrf_protect: CsrfProtect = Depends(),
+    browser_manager: BrowserManager = Depends(get_browser_manager),
 ):
     annotation = await session.get(Annotation, annotation_id)
     if not annotation or annotation.user_id != current_user.id:
         return RedirectResponse(url="/annotations/", status_code=HTTPStatus.FOUND)
 
-    page = await get_or_create_page(annotation_id, annotation.url)
+    page = await browser_manager.get_or_create_page(annotation_id, annotation.url)
 
     result = await session.exec(select(Action).where(Action.annotation_id == annotation_id).order_by(Action.id))
     actions = result.all()
@@ -212,7 +211,7 @@ async def annotation_session(
 
     # First session load (no actions yet) — take a fresh screenshot from the live page
     if not actions:
-        image_path = await take_page_screenshot(page)
+        image_path = await browser_manager.take_page_screenshot(page)
         new_screenshot = Screenshot(annotation_id=annotation_id, image_path=image_path)
         session.add(new_screenshot)
         await session.commit()
@@ -245,6 +244,7 @@ async def annotation_action(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
     csrf_protect: CsrfProtect = Depends(),
+    browser_manager: BrowserManager = Depends(get_browser_manager),
 ):
     await csrf_protect.validate_csrf(request)
 
@@ -253,14 +253,14 @@ async def annotation_action(
         return JSONResponse({"error": "Not found"}, status_code=HTTPStatus.NOT_FOUND)
 
     try:
-        page = await get_or_create_page(annotation_id, annotation.url)
+        page = await browser_manager.get_or_create_page(annotation_id, annotation.url)
 
         if action_type == "click" and click_axis_x is not None and click_axis_y is not None:
-            await perform_click(page, click_axis_x, click_axis_y)
+            await browser_manager.perform_click(page, click_axis_x, click_axis_y)
         elif action_type in ("scroll_up", "scroll_down"):
-            await perform_scroll(page, action_type)
+            await browser_manager.perform_scroll(page, action_type)
 
-        image_path = await take_page_screenshot(page)
+        image_path = await browser_manager.take_page_screenshot(page)
 
         screenshot = Screenshot(annotation_id=annotation_id, image_path=image_path)
         session.add(screenshot)
@@ -283,7 +283,7 @@ async def annotation_action(
         if action_type == "stop":
             annotation.status = "completed"
             session.add(annotation)
-            await close_page(annotation_id)
+            await browser_manager.close_page(annotation_id)
 
         await session.commit()
         return JSONResponse({"screenshot_url": f"/media/{image_path}"})

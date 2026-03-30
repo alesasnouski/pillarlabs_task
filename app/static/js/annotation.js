@@ -1,6 +1,7 @@
 document.addEventListener('alpine:init', () => {
     Alpine.data('annotationForm', () => ({
         loading: false,
+        submitting: false,
         plan: '',
 
         screenshotUrl: null,
