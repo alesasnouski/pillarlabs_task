@@ -50,9 +50,7 @@ async def test_annotation_detail(client: AsyncClient, annotation):
     assert annotation.prompt in response.text
 
 
-async def test_create_annotation_with_plan(client: AsyncClient, mocker):
-    mocker.patch("app.routers.annotations.generate_plan", return_value=MOCK_PLAN)
-
+async def test_create_annotation_with_plan(client: AsyncClient):
     response = await client.post(
         "/annotations/",
         data={
@@ -61,7 +59,6 @@ async def test_create_annotation_with_plan(client: AsyncClient, mocker):
             "plan": MOCK_PLAN,
         },
     )
-
     assert response.status_code in (HTTPStatus.OK, HTTPStatus.FOUND)
 
 
@@ -83,6 +80,7 @@ async def test_annotation_not_found_redirects(client: AsyncClient):
 
 async def test_generate_plan_error(client: AsyncClient, mocker):
     from app.ai.plan import PlanGenerationError
+
     mocker.patch("app.routers.annotations.generate_plan", side_effect=PlanGenerationError("API down"))
 
     response = await client.post(
@@ -92,3 +90,27 @@ async def test_generate_plan_error(client: AsyncClient, mocker):
 
     assert response.status_code == HTTPStatus.BAD_GATEWAY
     assert "API down" in response.json()["error"]
+
+
+async def test_screenshot_success(client: AsyncClient, mocker):
+    mocker.patch("app.routers.annotations.take_screenshot", return_value="screenshots/test.png")
+    mocker.patch("app.routers.annotations.validate_url", return_value=None)
+
+    response = await client.post(
+        "/annotations/screenshot",
+        data={"url": "https://trip.com"},
+    )
+
+    assert response.status_code == HTTPStatus.OK
+    assert "screenshot_url" in response.json()
+
+
+async def test_screenshot_invalid_url(client: AsyncClient, mocker):
+    mocker.patch("app.routers.annotations.validate_url", return_value="Invalid URL")
+
+    response = await client.post(
+        "/annotations/screenshot",
+        data={"url": "not-a-url"},
+    )
+
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY

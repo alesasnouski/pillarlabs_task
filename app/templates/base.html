@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="/static/css/styles.css">
 </head>
 <body>
-    <div class="container">
+    <div class="{% block container_class %}container{% endblock %}">
         {% block content %}{% endblock %}
     </div>
     <script defer src="https://unpkg.com/alpinejs@3/dist/cdn.min.js"></script>

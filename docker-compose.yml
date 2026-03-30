@@ -24,6 +24,7 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-annotation}:${POSTGRES_PASSWORD:-annotation}@db:5432/${POSTGRES_DB:-annotation_tool}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
     ports:
       - "8000:8000"
     volumes:

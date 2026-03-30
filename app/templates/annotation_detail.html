@@ -1,37 +1,48 @@
 {% extends "base.html" %}
 {% block title %}Annotation #{{ annotation.id }}{% endblock %}
+{% block container_class %}container-wide{% endblock %}
 {% block content %}
 <nav>
     <h1>Annotation #{{ annotation.id }}</h1>
     <a href="/annotations/"><button class="btn btn-secondary">Back</button></a>
 </nav>
 
-<div class="detail-card">
-    <div class="detail-meta">
-        <a href="{{ annotation.url }}" target="_blank" class="detail-url">{{ annotation.url }}</a>
-        <span class="badge">{{ annotation.status }}</span>
-        <span class="muted">{{ annotation.created_at.strftime("%Y-%m-%d %H:%M") }}</span>
+<div class="detail-layout">
+    {% if screenshots %}
+    <div class="detail-screenshots">
+        {% for s in screenshots %}
+        <img src="/media/{{ s.image_path }}" class="detail-screenshot" alt="Screenshot {{ loop.index }}">
+        {% endfor %}
     </div>
+    {% endif %}
 
-    <div class="detail-section">
-        <div class="detail-label">Prompt</div>
-        <div class="detail-text">{{ annotation.prompt }}</div>
-    </div>
+    <div class="detail-card">
+        <div class="detail-meta">
+            <a href="{{ annotation.url }}" target="_blank" class="detail-url">{{ annotation.url }}</a>
+            <span class="badge">{{ annotation.status }}</span>
+            <span class="muted">{{ annotation.created_at.strftime("%Y-%m-%d %H:%M") }}</span>
+        </div>
 
-    <div class="detail-section">
-        <div class="detail-label">Plan</div>
-        {% if annotation.plan %}
-        <ol class="plan-steps">
-            {% for line in annotation.plan.splitlines() %}
-            {% set step = line.strip() %}
-            {% if step %}
-            <li class="plan-step">{{ step.lstrip('0123456789. ') }}</li>
+        <div class="detail-section">
+            <div class="detail-label">Prompt</div>
+            <div class="detail-text">{{ annotation.prompt }}</div>
+        </div>
+
+        <div class="detail-section">
+            <div class="detail-label">Plan</div>
+            {% if annotation.plan %}
+            <ol class="plan-steps">
+                {% for line in annotation.plan.splitlines() %}
+                {% set step = line.strip() %}
+                {% if step %}
+                <li class="plan-step">{{ step.lstrip('0123456789. ') }}</li>
+                {% endif %}
+                {% endfor %}
+            </ol>
+            {% else %}
+            <p class="muted">No plan yet.</p>
             {% endif %}
-            {% endfor %}
-        </ol>
-        {% else %}
-        <p class="muted">No plan yet.</p>
-        {% endif %}
+        </div>
     </div>
 </div>
 {% endblock %}

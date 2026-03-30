@@ -46,9 +46,24 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
     )
 
+    op.create_table(
+        "screenshots",
+        sa.Column("id", sa.BigInteger(), autoincrement=True, nullable=False),
+        sa.Column("annotation_id", sa.Integer(), nullable=False),
+        sa.Column("image_path", sa.String(length=1000), nullable=False),
+        sa.Column("viewport_width", sa.Integer(), nullable=False),
+        sa.Column("viewport_height", sa.Integer(), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+        sa.ForeignKeyConstraint(["annotation_id"], ["annotations.id"]),
+        sa.PrimaryKeyConstraint("id"),
+    )
+    op.create_index(op.f("ix_screenshots_annotation_id"), "screenshots", ["annotation_id"])
+
 
 def downgrade() -> None:
+    op.drop_index(op.f("ix_screenshots_annotation_id"), table_name="screenshots")
     op.drop_table("annotations")
     op.drop_index(op.f("idx_users_username"), table_name="users")
     op.drop_index(op.f("idx_users_email"), table_name="users")
     op.drop_table("users")
+    op.drop_table("screenshots")
