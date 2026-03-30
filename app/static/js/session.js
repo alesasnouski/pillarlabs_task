@@ -61,6 +61,11 @@ document.addEventListener('alpine:init', () => {
 
                 const data = await response.json();
 
+                if (response.status === 422 && data.detail) {
+                    this.errorMsg = data.detail.map(e => e.msg.replace('Value error, ', '')).join('; ');
+                    return;
+                }
+
                 if (data.error) {
                     this.errorMsg = data.error;
                     return;

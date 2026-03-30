@@ -6,7 +6,7 @@ import zipfile
 from http import HTTPStatus
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, Form, Request
+from fastapi import APIRouter, HTTPExceptionDepends, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from fastapi_csrf_protect import CsrfProtect
@@ -18,6 +18,7 @@ from app.ai.plan import PlanGenerationError, generate_plan
 from app.core.database import get_session
 from app.core.deps import get_current_user
 from app.models import Action, Annotation, Screenshot, User
+from app.schemas.annotation import ActionCreate, GeneratePlanRequest
 from app.services.browser import (
     VIEWPORT,
     BrowserManager,
@@ -65,6 +66,9 @@ async def annotations_export_all(
     annotations = (
         await session.exec(select(Annotation).where(Annotation.user_id == current_user.id).order_by(Annotation.id))
     ).all()
+
+    if not annotations:
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="No annotations available to export.")
 
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
@@ -237,12 +241,7 @@ async def annotation_session(
 async def annotation_action(
     annotation_id: int,
     request: Request,
-    action_type: str = Form(),
-    description: str = Form(),
-    click_axis_x: int | None = Form(default=None),
-    click_axis_y: int | None = Form(default=None),
-    input_text: str | None = Form(default=None),
-    final_result: str = Form(default=""),
+    action_data: ActionCreate = Depends(ActionCreate.as_form),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
     csrf_protect: CsrfProtect = Depends(),
@@ -257,20 +256,13 @@ async def annotation_action(
     try:
         page = await browser_manager.get_or_create_page(annotation_id, annotation.url)
 
-        if action_type == "click":
-            if click_axis_x is None or click_axis_y is None:
-                return JSONResponse({"error": "Missing click coordinates"}, status_code=HTTPStatus.BAD_REQUEST)
-            if not (0 <= click_axis_x <= VIEWPORT["width"]):
-                return JSONResponse({"error": f"X coordinate {click_axis_x} is out of bounds (0 - {VIEWPORT['width']})"}, status_code=HTTPStatus.BAD_REQUEST)
-            if not (0 <= click_axis_y <= VIEWPORT["height"]):
-                return JSONResponse({"error": f"Y coordinate {click_axis_y} is out of bounds (0 - {VIEWPORT['height']})"}, status_code=HTTPStatus.BAD_REQUEST)
-            await browser_manager.perform_click(page, click_axis_x, click_axis_y)
-        elif action_type == "type":
-            if not input_text:
-                return JSONResponse({"error": "Missing input text"}, status_code=HTTPStatus.BAD_REQUEST)
-            await browser_manager.perform_type(page, input_text)
-        elif action_type in ("scroll_up", "scroll_down"):
-            await browser_manager.perform_scroll(page, action_type)
+        if action_data.action_type == "click":
+            # Boundaries are verified by Pydantic model
+            await browser_manager.perform_click(page, action_data.click_axis_x, action_data.click_axis_y)  # type: ignore
+        elif action_data.action_type == "type":
+            await browser_manager.perform_type(page, action_data.input_text)  # type: ignore
+        elif action_data.action_type in ("scroll_up", "scroll_down"):
+            await browser_manager.perform_scroll(page, action_data.action_type)
 
         image_path = await browser_manager.take_page_screenshot(page)
 
@@ -284,16 +276,16 @@ async def annotation_action(
         action = Action(
             annotation_id=annotation_id,
             screenshot_id=screenshot.id,
-            type=action_type,
-            click_axis_x=click_axis_x,
-            click_axis_y=click_axis_y,
-            input_text=input_text,
-            description=description,
-            final_result=final_result,
+            type=action_data.action_type,
+            click_axis_x=action_data.click_axis_x,
+            click_axis_y=action_data.click_axis_y,
+            input_text=action_data.input_text,
+            description=action_data.description,
+            final_result=action_data.final_result,
         )
         session.add(action)
 
-        if action_type == "stop":
+        if action_data.action_type == "stop":
             annotation.status = "completed"
             session.add(annotation)
             await browser_manager.close_page(annotation_id)
