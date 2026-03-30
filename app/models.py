@@ -62,3 +62,25 @@ class Screenshot(SQLModel, table=True):
         default_factory=lambda: datetime.now(UTC),
         sa_column=sa.Column(sa.DateTime(timezone=True), nullable=False),
     )
+
+
+class Action(SQLModel, table=True):
+    __tablename__ = "actions"
+
+    id: int | None = Field(
+        default=None,
+        sa_column=sa.Column(sa.BigInteger(), primary_key=True, autoincrement=True),
+    )
+    annotation_id: int = Field(foreign_key="annotations.id", index=True)
+    screenshot_id: int | None = Field(default=None, foreign_key="screenshots.id")
+
+    type: str  # click / scroll_up / scroll_down / stop
+    click_axis_x: int | None = Field(default=None)
+    click_axis_y: int | None = Field(default=None)
+    description: str
+    final_result: str = Field(default="")
+
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(UTC),
+        sa_column=sa.Column(sa.DateTime(timezone=True), nullable=False),
+    )

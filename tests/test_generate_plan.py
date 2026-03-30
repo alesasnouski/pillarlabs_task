@@ -50,7 +50,7 @@ async def test_annotation_detail(client: AsyncClient, annotation):
     assert annotation.prompt in response.text
 
 
-async def test_create_annotation_with_plan(client: AsyncClient):
+async def test_create_annotation_with_plan(client: AsyncClient, mocker):
     response = await client.post(
         "/annotations/",
         data={

@@ -42,7 +42,7 @@
         <textarea name="plan" rows="20" x-model="plan" placeholder="Step-by-step plan (optional)"></textarea>
     </div>
 
-    <button type="submit" class="btn" :disabled="!canSubmit">Create</button>
+    <button type="submit" class="btn" :disabled="!canSubmit">Start</button>
     <p x-show="!canSubmit && $refs.url && $refs.url.value" class="muted" style="margin-top: 0.5rem">
         Screenshot required before creating annotation.
     </p>

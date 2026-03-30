@@ -57,7 +57,26 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(["annotation_id"], ["annotations.id"]),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(op.f("ix_screenshots_annotation_id"), "screenshots", ["annotation_id"])
+    op.create_index(
+        op.f("ix_screenshots_annotation_id"), "screenshots", ["annotation_id"]
+    )
+
+    op.create_table(
+        "actions",
+        sa.Column("id", sa.BigInteger(), autoincrement=True, nullable=False),
+        sa.Column("annotation_id", sa.BigInteger(), nullable=False),
+        sa.Column("screenshot_id", sa.BigInteger(), nullable=True),
+        sa.Column("type", sa.String(), nullable=False),
+        sa.Column("click_axis_x", sa.Integer(), nullable=True),
+        sa.Column("click_axis_y", sa.Integer(), nullable=True),
+        sa.Column("description", sa.String(), nullable=False),
+        sa.Column("final_result", sa.String(), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+        sa.ForeignKeyConstraint(["annotation_id"], ["annotations.id"]),
+        sa.ForeignKeyConstraint(["screenshot_id"], ["screenshots.id"]),
+        sa.PrimaryKeyConstraint("id"),
+    )
+    op.create_index(op.f("idx_actions_annotation_id"), "actions", ["annotation_id"])
 
 
 def downgrade() -> None:
@@ -67,3 +86,5 @@ def downgrade() -> None:
     op.drop_index(op.f("idx_users_email"), table_name="users")
     op.drop_table("users")
     op.drop_table("screenshots")
+    op.drop_index(op.f("idx_actions_annotation_id"), table_name="actions")
+    op.drop_table("actions")

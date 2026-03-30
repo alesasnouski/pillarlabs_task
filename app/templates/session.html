@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}Session #{{ annotation.id }}{% endblock %}
+{% block container_class %}container-wide{% endblock %}
+{% block content %}
+<nav>
+    <h1>Annotation #{{ annotation.id }}</h1>
+    <div>
+        <span class="badge">{{ annotation.status }}</span>
+        <a href="/annotations/{{ annotation.id }}" style="margin-left: 0.75rem">
+            <button class="btn btn-secondary">Detail</button>
+        </a>
+    </div>
+</nav>
+
+<div class="session-layout" x-data="sessionForm">
+    <input type="hidden" name="csrf_token" x-ref="csrfToken" value="{{ csrf_token }}">
+
+    <!-- Left: screenshot -->
+    <div class="session-screenshot-col">
+        <div class="session-prompt">{{ annotation.prompt }}</div>
+
+        {% if screenshot %}
+        <div class="screenshot-wrapper" @click="onScreenshotClick($event, $refs.screenshotImg)">
+            <img x-ref="screenshotImg"
+                 :src="currentScreenshotUrl || '{{ '/media/' + screenshot.image_path }}'"
+                 class="session-screenshot" alt="Current page">
+            <div class="click-marker" x-show="clickX !== null"
+                 :style="`left: ${markerLeft}px; top: ${markerTop}px`"></div>
+        </div>
+        {% else %}
+        <p class="muted">No screenshot yet.</p>
+        {% endif %}
+    </div>
+
+    <!-- Right: plan + action form + history -->
+    <div class="session-controls-col">
+        {% if annotation.plan %}
+        <div class="detail-section" style="margin-bottom: 1.25rem">
+            <div class="detail-label">AI Plan</div>
+            <ol class="plan-steps plan-steps-session">
+                {% for line in annotation.plan.splitlines() %}
+                {% set step = line.strip() %}
+                {% if step %}
+                <li class="plan-step">{{ step.lstrip('0123456789. ') }}</li>
+                {% endif %}
+                {% endfor %}
+            </ol>
+        </div>
+        {% endif %}
+
+        <div class="detail-section" style="margin-bottom: 1rem">
+            <div class="detail-label">Action type</div>
+            <div class="action-type-grid">
+                <button type="button" class="action-btn" :class="{ active: actionType === 'click' }"
+                        @click="actionType = 'click'">Click</button>
+                <button type="button" class="action-btn" :class="{ active: actionType === 'scroll_up' }"
+                        @click="actionType = 'scroll_up'">Scroll Up</button>
+                <button type="button" class="action-btn" :class="{ active: actionType === 'scroll_down' }"
+                        @click="actionType = 'scroll_down'">Scroll Down</button>
+                <button type="button" class="action-btn action-btn-stop" :class="{ active: actionType === 'stop' }"
+                        @click="actionType = 'stop'">Stop</button>
+            </div>
+        </div>
+
+        <div class="field" x-show="actionType === 'click'">
+            <label>Click coordinates</label>
+            <p class="muted" x-show="clickX === null">Click on the screenshot to set coordinates</p>
+            <p x-show="clickX !== null">X: <strong x-text="clickX"></strong> &nbsp; Y: <strong x-text="clickY"></strong></p>
+        </div>
+
+        <div class="field">
+            <label>Description</label>
+            <textarea x-model="description" rows="3" placeholder="Explain what you are doing and why…"></textarea>
+        </div>
+
+        <div class="field" x-show="actionType === 'stop'">
+            <label>Final result</label>
+            <textarea x-model="finalResult" rows="3" placeholder="The answer to the task…"></textarea>
+        </div>
+
+        <button type="button" class="btn" style="width: 100%"
+                :disabled="submitting || !canSubmit"
+                @click="submitAction({{ annotation.id }})">
+            <span x-show="!submitting">Execute</span>
+            <span x-show="submitting">Running…</span>
+        </button>
+
+        <div x-show="errorMsg" class="error" x-text="errorMsg" style="margin-top: 0.5rem"></div>
+
+        <!-- Action history -->
+        {% if actions %}
+        <div class="detail-section" style="margin-top: 1.5rem">
+            <div class="detail-label">History ({{ actions|length }})</div>
+            <div class="action-history">
+                {% for a in actions %}
+                <div class="action-history-item">
+                    <span class="badge">{{ a.type }}</span>
+                    <span class="action-history-desc">{{ a.description }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/session.js"></script>
+{% endblock %}

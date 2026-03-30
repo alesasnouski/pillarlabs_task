@@ -11,6 +11,7 @@ from fastapi_csrf_protect import CsrfProtect
 
 from app.core.config import settings
 from app.routers import annotations, auth, users
+from app.services.browser_session import start_browser, stop_browser
 
 
 @CsrfProtect.load_config
@@ -39,7 +40,9 @@ def run_migrations():
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     await asyncio.to_thread(run_migrations)
+    await start_browser()
     yield
+    await stop_browser()
 
 
 app = FastAPI(lifespan=lifespan)

@@ -5,6 +5,9 @@
 <nav>
     <h1>Annotation #{{ annotation.id }}</h1>
     <a href="/annotations/"><button class="btn btn-secondary">Back</button></a>
+    <a href="/annotations/{{ annotation.id }}/export"><button class="btn btn-secondary" style="margin-left: 0.5rem">Export JSON</button></a>
+    <a href="/annotations/{{ annotation.id }}/export-zip"><button class="btn btn-secondary" style="margin-left: 0.5rem">Export ZIP</button></a>
+    <a href="/annotations/{{ annotation.id }}/session"><button class="btn" style="margin-left: 0.5rem">Start Session</button></a>
 </nav>
 
 <div class="detail-layout">
