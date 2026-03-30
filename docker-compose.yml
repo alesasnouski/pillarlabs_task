@@ -1,0 +1,33 @@
+services:
+  db:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-annotation_tool}
+      POSTGRES_USER: ${POSTGRES_USER:-annotation}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-annotation}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-annotation} -d ${POSTGRES_DB:-annotation_tool}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-annotation}:${POSTGRES_PASSWORD:-annotation}@db:5432/${POSTGRES_DB:-annotation_tool}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./media:/app/media
+
+volumes:
+  postgres_data:
