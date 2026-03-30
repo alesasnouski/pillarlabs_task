@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}New Annotation{% endblock %}
+{% block content %}
+<nav>
+    <h1>Pick a website and write a prompt</h1>
+    <a href="/annotations/"><button class="btn btn-secondary">Back</button></a>
+</nav>
+
+<form method="post" action="/annotations/" x-data="annotationForm">
+    <input type="hidden" name="csrf_token" x-ref="csrfToken" value="{{ csrf_token }}">
+    <div class="field">
+        <label>Website</label>
+        <input type="url" name="url" x-ref="url" placeholder="https://example.com" required autofocus>
+    </div>
+    <div class="field">
+        <label>Prompt</label>
+        <textarea name="prompt" x-ref="prompt" rows="4" required placeholder="What would you like to annotate?"></textarea>
+    </div>
+    <div class="field">
+        <div class="field-header">
+            <label>Plan</label>
+            <button type="button" class="btn-icon tooltip" data-tip="Generate with AI"
+                    :disabled="loading" @click="generate()">
+                <i data-lucide="sparkles" x-show="!loading"></i>
+                <i data-lucide="loader-2" x-show="loading" style="animation: spin 0.8s linear infinite"></i>
+            </button>
+        </div>
+        <textarea name="plan" rows="20" x-model="plan" placeholder="Step-by-step plan (optional)"></textarea>
+    </div>
+    <button type="submit" class="btn">Create</button>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/annotation.js"></script>
+{% endblock %}

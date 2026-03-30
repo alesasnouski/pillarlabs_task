@@ -7,8 +7,22 @@ from alembic.config import Config
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi_csrf_protect import CsrfProtect
 
+from app.core.config import settings
 from app.routers import annotations, auth, users
+
+
+@CsrfProtect.load_config
+def get_csrf_config():
+    return [
+        ("secret_key", settings.secret_key),
+        ("token_location", "body"),
+        ("token_key", "csrf_token"),
+        ("cookie_samesite", "strict"),
+        ("httponly", False),
+    ]
+
 
 logging.basicConfig(
     level=logging.INFO,

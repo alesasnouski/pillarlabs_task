@@ -1,3 +1,5 @@
+from http import HTTPStatus
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 
@@ -9,22 +11,22 @@ from main import app
 @pytest.fixture
 def client(session):
     app.dependency_overrides[get_session] = lambda: session
-    yield AsyncClient(transport=ASGITransport(app=app), base_url="http://test")
+    yield AsyncClient(transport=ASGITransport(app=app), base_url="http://test.net")
     app.dependency_overrides.clear()
 
 
 async def test_get_user(client: AsyncClient, user: User):
     response = await client.get(f"/users/{user.id}")
-    assert response.status_code == 200
+    assert response.status_code == HTTPStatus.OK
     data = response.json()
     assert data["id"] == user.id
-    assert data["username"] == "testuser"
-    assert data["email"] == "test@example.com"
+    assert data["username"] == user.username
+    assert data["email"] == user.email
 
 
 async def test_get_user_not_found(client: AsyncClient):
     response = await client.get("/users/99999")
-    assert response.status_code == 404
+    assert response.status_code == HTTPStatus.NOT_FOUND
 
 
 async def test_create_user(client: AsyncClient):
@@ -36,7 +38,7 @@ async def test_create_user(client: AsyncClient):
             "password": "secret",
         },
     )
-    assert response.status_code == 201
+    assert response.status_code == HTTPStatus.CREATED
     data = response.json()
     assert data["id"] is not None
     assert data["username"] == "newuser"

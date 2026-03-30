@@ -13,6 +13,7 @@
 <table>
     <thead>
         <tr>
+            <th>#</th>
             <th>URL</th>
             <th>Prompt</th>
             <th>Status</th>
@@ -22,6 +23,7 @@
     <tbody>
         {% for a in annotations %}
         <tr>
+            <td><a href="/annotations/{{ a.id }}" class="row-link">{{ a.id }}</a></td>
             <td>{{ a.url | truncate(40, end='…') }}</td>
             <td>{{ a.prompt | truncate(60, end='…') }}</td>
             <td>{{ a.status }}</td>

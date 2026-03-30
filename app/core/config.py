@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     secret_key: str = "change-me-in-production"
     access_token_expire_minutes: int = 60 * 24  # 24 hours
     bcrypt_rounds: int = 12
-
+    anthropic_api_key: str = ""
     model_config = {"env_file": ".env"}
 
 
