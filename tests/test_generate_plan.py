@@ -63,3 +63,32 @@ async def test_create_annotation_with_plan(client: AsyncClient, mocker):
     )
 
     assert response.status_code in (HTTPStatus.OK, HTTPStatus.FOUND)
+
+
+async def test_annotations_list(client: AsyncClient, annotation):
+    response = await client.get("/annotations/")
+    assert response.status_code == HTTPStatus.OK
+    assert annotation.url in response.text
+
+
+async def test_annotation_new_page(client: AsyncClient):
+    response = await client.get("/annotations/new")
+    assert response.status_code == HTTPStatus.OK
+
+
+async def test_annotation_not_found_redirects(client: AsyncClient):
+    response = await client.get("/annotations/99999")
+    assert response.status_code in (HTTPStatus.OK, HTTPStatus.FOUND)
+
+
+async def test_generate_plan_error(client: AsyncClient, mocker):
+    from app.ai.plan import PlanGenerationError
+    mocker.patch("app.routers.annotations.generate_plan", side_effect=PlanGenerationError("API down"))
+
+    response = await client.post(
+        "/annotations/generate-plan",
+        data={"url": "https://trip.com", "prompt": "Find hotels"},
+    )
+
+    assert response.status_code == HTTPStatus.BAD_GATEWAY
+    assert "API down" in response.json()["error"]

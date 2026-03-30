@@ -18,6 +18,10 @@ migrate:
 test:
 	uv run pytest tests/ -v
 
+cover:
+	uv run pytest tests/ --cov=app --cov-report=html
+	@echo "Report: htmlcov/index.html"
+
 lformat:
 	uv run ruff format .
 
