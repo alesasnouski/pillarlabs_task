@@ -5,7 +5,7 @@ from pathlib import Path
 from playwright.async_api import Error as PlaywrightError
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 
-from app.services.browser_session import VIEWPORT, get_browser, _wait_for_render
+from app.services.browser_session import VIEWPORT, _wait_for_render, get_browser
 
 logger = logging.getLogger(__name__)
 

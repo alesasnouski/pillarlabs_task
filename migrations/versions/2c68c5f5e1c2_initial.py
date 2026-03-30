@@ -57,9 +57,7 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(["annotation_id"], ["annotations.id"]),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(
-        op.f("ix_screenshots_annotation_id"), "screenshots", ["annotation_id"]
-    )
+    op.create_index(op.f("ix_screenshots_annotation_id"), "screenshots", ["annotation_id"])
 
     op.create_table(
         "actions",

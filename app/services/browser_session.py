@@ -3,9 +3,8 @@ import logging
 import uuid
 from pathlib import Path
 
-from playwright.async_api import Browser, Page, ViewportSize
+from playwright.async_api import Browser, Page, ViewportSize, async_playwright
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError
-from playwright.async_api import async_playwright
 
 logger = logging.getLogger(__name__)
 

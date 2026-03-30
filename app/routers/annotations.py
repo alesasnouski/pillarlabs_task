@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from fastapi_csrf_protect import CsrfProtect
+from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -25,7 +26,6 @@ from app.services.browser_session import (
     perform_scroll,
     take_page_screenshot,
 )
-from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 from app.services.url_validator import validate_url
 
 logger = logging.getLogger(__name__)
@@ -41,14 +41,10 @@ async def annotations_list(
     current_user: User = Depends(get_current_user),
 ):
     result = await session.exec(
-        select(Annotation)
-        .where(Annotation.user_id == current_user.id)
-        .order_by(Annotation.id.desc())
+        select(Annotation).where(Annotation.user_id == current_user.id).order_by(Annotation.id.desc())
     )
     annotations = result.all()
-    return templates.TemplateResponse(
-        request, "annotations.html", {"annotations": annotations}
-    )
+    return templates.TemplateResponse(request, "annotations.html", {"annotations": annotations})
 
 
 @router.get("/new", response_class=HTMLResponse)
@@ -58,9 +54,7 @@ async def annotation_new(
     csrf_protect: CsrfProtect = Depends(),
 ):
     csrf_token, signed_token = csrf_protect.generate_csrf_tokens()
-    response = templates.TemplateResponse(
-        request, "annotation_new.html", {"csrf_token": csrf_token}
-    )
+    response = templates.TemplateResponse(request, "annotation_new.html", {"csrf_token": csrf_token})
     csrf_protect.set_csrf_cookie(signed_token, response)
     return response
 
@@ -70,22 +64,20 @@ async def annotations_export_all(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    annotations = (await session.exec(
-        select(Annotation)
-        .where(Annotation.user_id == current_user.id)
-        .order_by(Annotation.id)
-    )).all()
+    annotations = (
+        await session.exec(select(Annotation).where(Annotation.user_id == current_user.id).order_by(Annotation.id))
+    ).all()
 
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
         for annotation in annotations:
             ann_id = annotation.id
-            actions = (await session.exec(
-                select(Action).where(Action.annotation_id == ann_id).order_by(Action.id)
-            )).all()
-            screenshots = (await session.exec(
-                select(Screenshot).where(Screenshot.annotation_id == ann_id).order_by(Screenshot.id)
-            )).all()
+            actions = (
+                await session.exec(select(Action).where(Action.annotation_id == ann_id).order_by(Action.id))
+            ).all()
+            screenshots = (
+                await session.exec(select(Screenshot).where(Screenshot.annotation_id == ann_id).order_by(Screenshot.id))
+            ).all()
 
             data = _serialize_annotation(annotation, list(actions), list(screenshots))
             zf.writestr(
@@ -118,9 +110,7 @@ async def annotation_detail(
     if not annotation or annotation.user_id != current_user.id:
         return RedirectResponse(url="/annotations/", status_code=HTTPStatus.FOUND)
     result = await session.exec(
-        select(Screenshot)
-        .where(Screenshot.annotation_id == annotation_id)
-        .order_by(Screenshot.id.desc())
+        select(Screenshot).where(Screenshot.annotation_id == annotation_id).order_by(Screenshot.id.desc())
     )
     screenshots = result.all()
     return templates.TemplateResponse(
@@ -141,9 +131,7 @@ async def annotation_screenshot(
 
     error = validate_url(url)
     if error:
-        return JSONResponse(
-            {"error": error}, status_code=HTTPStatus.UNPROCESSABLE_ENTITY
-        )
+        return JSONResponse({"error": error}, status_code=HTTPStatus.UNPROCESSABLE_ENTITY)
 
     try:
         image_path = await take_screenshot(url)
@@ -197,9 +185,7 @@ async def annotation_create(
         session.add(screenshot)
 
     await session.commit()
-    return RedirectResponse(
-        url=f"/annotations/{annotation_id}/session", status_code=HTTPStatus.FOUND
-    )
+    return RedirectResponse(url=f"/annotations/{annotation_id}/session", status_code=HTTPStatus.FOUND)
 
 
 @router.get("/{annotation_id}/session", response_class=HTMLResponse)
@@ -216,15 +202,11 @@ async def annotation_session(
 
     page = await get_or_create_page(annotation_id, annotation.url)
 
-    result = await session.exec(
-        select(Action).where(Action.annotation_id == annotation_id).order_by(Action.id)
-    )
+    result = await session.exec(select(Action).where(Action.annotation_id == annotation_id).order_by(Action.id))
     actions = result.all()
 
     result = await session.exec(
-        select(Screenshot)
-        .where(Screenshot.annotation_id == annotation_id)
-        .order_by(Screenshot.id.desc())
+        select(Screenshot).where(Screenshot.annotation_id == annotation_id).order_by(Screenshot.id.desc())
     )
     latest_screenshot = result.first()
 
@@ -273,11 +255,7 @@ async def annotation_action(
     try:
         page = await get_or_create_page(annotation_id, annotation.url)
 
-        if (
-            action_type == "click"
-            and click_axis_x is not None
-            and click_axis_y is not None
-        ):
+        if action_type == "click" and click_axis_x is not None and click_axis_y is not None:
             await perform_click(page, click_axis_x, click_axis_y)
         elif action_type in ("scroll_up", "scroll_down"):
             await perform_scroll(page, action_type)
@@ -362,12 +340,12 @@ async def annotation_export(
     if not annotation or annotation.user_id != current_user.id:
         return JSONResponse({"error": "Not found"}, status_code=HTTPStatus.NOT_FOUND)
 
-    actions = (await session.exec(
-        select(Action).where(Action.annotation_id == annotation_id).order_by(Action.id)
-    )).all()
-    screenshots = (await session.exec(
-        select(Screenshot).where(Screenshot.annotation_id == annotation_id).order_by(Screenshot.id)
-    )).all()
+    actions = (
+        await session.exec(select(Action).where(Action.annotation_id == annotation_id).order_by(Action.id))
+    ).all()
+    screenshots = (
+        await session.exec(select(Screenshot).where(Screenshot.annotation_id == annotation_id).order_by(Screenshot.id))
+    ).all()
 
     data = _serialize_annotation(annotation, list(actions), list(screenshots))
     content = json.dumps(data, indent=2, ensure_ascii=False)
@@ -389,12 +367,12 @@ async def annotation_export_zip(
     if not annotation or annotation.user_id != current_user.id:
         return JSONResponse({"error": "Not found"}, status_code=HTTPStatus.NOT_FOUND)
 
-    actions = (await session.exec(
-        select(Action).where(Action.annotation_id == annotation_id).order_by(Action.id)
-    )).all()
-    screenshots = (await session.exec(
-        select(Screenshot).where(Screenshot.annotation_id == annotation_id).order_by(Screenshot.id)
-    )).all()
+    actions = (
+        await session.exec(select(Action).where(Action.annotation_id == annotation_id).order_by(Action.id))
+    ).all()
+    screenshots = (
+        await session.exec(select(Screenshot).where(Screenshot.annotation_id == annotation_id).order_by(Screenshot.id))
+    ).all()
 
     data = _serialize_annotation(annotation, list(actions), list(screenshots))
 
@@ -412,4 +390,3 @@ async def annotation_export_zip(
         media_type="application/zip",
         headers={"Content-Disposition": f'attachment; filename="annotation_{annotation_id}.zip"'},
     )
-
