@@ -87,9 +87,9 @@
 
         <button type="button" class="btn" style="width: 100%"
                 :disabled="submitting || !canSubmit"
-                @click="submitAction({{ annotation.id }})">
-            <span x-show="!submitting">Execute</span>
-            <span x-show="submitting">Running…</span>
+                @click="submitAction({{ annotation.id }})"
+                x-text="submitting ? 'Running…' : 'Execute'">
+            Execute
         </button>
 
         <div x-show="errorMsg" class="error" x-text="errorMsg" style="margin-top: 0.5rem"></div>
