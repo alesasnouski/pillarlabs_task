@@ -1,5 +1,7 @@
 # Web Browser Annotation Tool
 
+## Update after 3 weeks. Stating the facts: the company provided zero feedback and didn't send any response at all. 
+
 A full-stack web application designed to gather clicks, typing, and scrolling across web pages.
 This tool serves as an interface for annotating web workflows, generating datasets that can be used to train AI agents to browse the web pages.
 
